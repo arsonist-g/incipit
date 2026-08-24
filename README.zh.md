@@ -235,6 +235,8 @@ VS Code 的扩展之间有严格的沙箱隔离，一个插件没有办法向另
 
 - 重启后历史公式不渲染的竞态修复：数学预处理钩子改为在 webview bundle 运行前安装，VS Code 重启后恢复的往期对话中公式与实时消息渲染一致（上游 issue [#12](https://github.com/yc-duan/incipit/issues/12)）。
 - 宽面板布局适配：对话列宽度随面板宽度渐进放宽，放到宽编辑器区域不再固定为边栏宽度（上游 issue [#13](https://github.com/yc-duan/incipit/issues/13)）。
+- @ 引用命令桥适配 Claude Code 2.1.241 的新命令结构，companion 扩展的引用在当前版本宿主上恢复可用。
+- 资源管理器右键菜单：右键文件或文件夹出现 *Incipit: Add to Claude Code Session Request*，点击后在输入框光标处插入 ` @<绝对路径>`（companion 扩展，支持多选）。
 
 ---
 
