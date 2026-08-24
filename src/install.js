@@ -209,6 +209,11 @@ const HOST_CONTACT_ROUTE_CATALOG = Object.freeze([
     extensionSha256: '3aae3fae2428888c0cf875490c02926241ba3941a4ea178d6b1316d0dc525818',
     webviewSha256: '41a6bef5785078bf411932d8219d1f66d253ef6ada90422ae046d9ff699d71d7',
   },
+  {
+    version: '2.1.241',
+    extensionSha256: 'dfad55e168977ad34d83183bab0bf73b799e18752e935df9c39608b5243b22b2',
+    webviewSha256: '282b68c13d0caec6426798214dc7b1182b3d141b76de0b3a2042420d338d625e',
+  },
 ]);
 
 function sanitizeFontFamilyValue(raw) {
@@ -263,9 +268,17 @@ const MARKDOWN_CODE_COMPONENT_V1_PATCHED_PATTERN =
 const MARKDOWN_CODE_HIGHLIGHT_CALL =
   'window.__INCIPIT_HIGHLIGHT_CODE_HTML__&&window.__INCIPIT_HIGHLIGHT_CODE_HTML__(';
 const AT_MENTION_COMMAND_ANCHOR_PATTERN =
-  /function ([A-Za-z_$][\w$]*)\(([A-Za-z_$][\w$]*),([A-Za-z_$][\w$]*),([A-Za-z_$][\w$]*)\)\{([\s\S]{0,900}?)(\2\.push\(([A-Za-z_$][\w$]*)\.commands\.registerCommand\("claude-vscode\.insertAtMention")/g;
+  /function ([A-Za-z_$][\w$]*)\(([A-Za-z_$][\w$]*),([A-Za-z_$][\w$]*),([A-Za-z_$][\w$]*)\)\{([\s\S]{0,900}?)(\5\.push\(([A-Za-z_$][\w$]*)\.commands\.registerCommand\("claude-vscode\.insertAtMention")/g;
 const AT_MENTION_COMMAND_PATCHED_RE =
   /commands\.registerCommand\("incipit\.claudeCode\.insertAtMention",async\(__incipitMention\)=>\{if\(typeof __incipitMention==="string"\)\{if\(![A-Za-z_$][\w$]*\.hasVisibleWebview\(\)\)await [A-Za-z_$][\w$]*\.commands\.executeCommand\("claude-vscode\.editor\.openLast"\);let __incipitFire=\(\)=>[A-Za-z_$][\w$]*\.fire\(__incipitMention\);setTimeout\(__incipitFire,80\);setTimeout\(__incipitFire,360\);return!0\}return!1\}\)/;
+// 2.1.241+ rebuilt the at-mention command setup: a two-arg function whose
+// local delivery helper implements the whole reveal/stash/openLast routing
+// the old patch used to emulate. Anchor on that exact delivery chain ending
+// at the first `insertAtMention` registration, and reuse the helper.
+const AT_MENTION_DELIVERY_ANCHOR_PATTERN =
+  /function ([A-Za-z_$][\w$]*)\(([A-Za-z_$][\w$]*),([A-Za-z_$][\w$]*)\)\{async function ([A-Za-z_$][\w$]*)\(([A-Za-z_$][\w$]*)\)\{if\(\3\.deliverAtMention\(\5\)\)return;if\(\3\.revealAndDeliverAtMention\(\5\)\)return;\3\.stashAtMentionForNextChatSurface\(\5\),await ([A-Za-z_$][\w$]*)\.commands\.executeCommand\("claude-vscode\.editor\.openLast"\)\}(\2\.push\()([A-Za-z_$][\w$]*)\.commands\.registerCommand\("claude-vscode\.insertAtMention"/g;
+const AT_MENTION_DELIVERY_COMMAND_PATCHED_RE =
+  /commands\.registerCommand\("incipit\.claudeCode\.insertAtMention",async\(__incipitMention\)=>\{if\(typeof __incipitMention==="string"\)\{await [A-Za-z_$][\w$]*\(__incipitMention\);return!0\}return!1\}\)/;
 const CLAUDE_VISIBLE_COMMAND_PATCHED_RE =
   /commands\.registerCommand\("incipit\.claudeCode\.hasVisibleWebview",\(\)=>[A-Za-z_$][\w$]*\.hasVisibleWebview\(\)\)/;
 const IMPLICIT_SELECTION_SEND_BRANCH_PATTERN =
@@ -2625,43 +2638,81 @@ function patchMarkdownCodeComponent(content) {
 }
 
 function patchAtMentionCommand(content) {
-  const hasInsert = AT_MENTION_COMMAND_PATCHED_RE.test(content);
+  const hasLegacyInsert = AT_MENTION_COMMAND_PATCHED_RE.test(content);
+  const hasDeliveryInsert = AT_MENTION_DELIVERY_COMMAND_PATCHED_RE.test(content);
+  const hasInsert = hasLegacyInsert || hasDeliveryInsert;
   const hasVisible = CLAUDE_VISIBLE_COMMAND_PATCHED_RE.test(content);
   if (hasInsert && hasVisible) {
     return [content, `${padLabel('@引用命令桥')}: 已存在`];
   }
 
   const matches = content.match(AT_MENTION_COMMAND_ANCHOR_PATTERN) || [];
-  if (matches.length !== 1) {
-    return [content, `${padLabel('@引用命令桥')}: 降级 (未找到命令 setup 锚点; companion 引用不可用)`];
+  if (matches.length === 1) {
+    return [
+      content.replace(AT_MENTION_COMMAND_ANCHOR_PATTERN, (
+        _match,
+        functionName,
+        subscriptions,
+        emitter,
+        webviews,
+        prefix,
+        commandStart,
+        vscodeApi,
+      ) => {
+        const registrations = [];
+        if (!hasInsert) {
+          registrations.push(
+            `${subscriptions}.push(${vscodeApi}.commands.registerCommand("incipit.claudeCode.insertAtMention",async(__incipitMention)=>{if(typeof __incipitMention==="string"){if(!${webviews}.hasVisibleWebview())await ${vscodeApi}.commands.executeCommand("claude-vscode.editor.openLast");let __incipitFire=()=>${emitter}.fire(__incipitMention);setTimeout(__incipitFire,80);setTimeout(__incipitFire,360);return!0}return!1})),`,
+          );
+        }
+        if (!hasVisible) {
+          registrations.push(
+            `${subscriptions}.push(${vscodeApi}.commands.registerCommand("incipit.claudeCode.hasVisibleWebview",()=>${webviews}.hasVisibleWebview())),`,
+          );
+        }
+        return `function ${functionName}(${subscriptions},${emitter},${webviews}){${prefix}${registrations.join('')}${commandStart}`;
+      }
+      ),
+      `${padLabel('@引用命令桥')}: 已写入`,
+    ];
   }
-  return [
-    content.replace(AT_MENTION_COMMAND_ANCHOR_PATTERN, (
-      _match,
-      functionName,
-      subscriptions,
-      emitter,
-      webviews,
-      prefix,
-      commandStart,
-      vscodeApi,
-    ) => {
-      const registrations = [];
-      if (!hasInsert) {
-        registrations.push(
-          `${subscriptions}.push(${vscodeApi}.commands.registerCommand("incipit.claudeCode.insertAtMention",async(__incipitMention)=>{if(typeof __incipitMention==="string"){if(!${webviews}.hasVisibleWebview())await ${vscodeApi}.commands.executeCommand("claude-vscode.editor.openLast");let __incipitFire=()=>${emitter}.fire(__incipitMention);setTimeout(__incipitFire,80);setTimeout(__incipitFire,360);return!0}return!1})),`,
-        );
-      }
-      if (!hasVisible) {
-        registrations.push(
-          `${subscriptions}.push(${vscodeApi}.commands.registerCommand("incipit.claudeCode.hasVisibleWebview",()=>${webviews}.hasVisibleWebview())),`,
-        );
-      }
-      return `function ${functionName}(${subscriptions},${emitter},${webviews}){${prefix}${registrations.join('')}${commandStart}`;
-    }
-    ),
-    `${padLabel('@引用命令桥')}: 已写入`,
-  ];
+
+  // 2.1.241+ hosts rebuilt the command setup: a two-arg function whose local
+  // delivery helper already implements the deliver/reveal/stash/openLast
+  // routing the legacy patch used to emulate. Reuse that helper directly.
+  // The old `webviews` registry no longer exists on this host family, so
+  // `incipit.claudeCode.hasVisibleWebview` cannot be registered here; the
+  // experimental editor overlay degrades on its own when that command is
+  // missing.
+  const deliveryMatches = regexMatches(AT_MENTION_DELIVERY_ANCHOR_PATTERN, content);
+  if (
+    !hasInsert &&
+    deliveryMatches.length === 1 &&
+    deliveryMatches[0][6] === deliveryMatches[0][8]
+  ) {
+    const delivery = deliveryMatches[0];
+    const [, functionName, subscriptions, router, deliver, mentionArg, , , vscodeApi] = delivery;
+    const deliveryBody =
+      `async function ${deliver}(${mentionArg}){if(${router}.deliverAtMention(${mentionArg}))return;` +
+      `if(${router}.revealAndDeliverAtMention(${mentionArg}))return;` +
+      `${router}.stashAtMentionForNextChatSurface(${mentionArg}),await ${vscodeApi}.commands.executeCommand("claude-vscode.editor.openLast")}`;
+    const incipitCommand =
+      `${subscriptions}.push(${vscodeApi}.commands.registerCommand("incipit.claudeCode.insertAtMention",` +
+      `async(__incipitMention)=>{if(typeof __incipitMention==="string"){await ${deliver}(__incipitMention);return!0}return!1})),`;
+    const commandStart = `${subscriptions}.push(${vscodeApi}.commands.registerCommand("claude-vscode.insertAtMention"`;
+    return [
+      content.replace(AT_MENTION_DELIVERY_ANCHOR_PATTERN, () =>
+        `function ${functionName}(${subscriptions},${router}){${deliveryBody}${incipitCommand}${commandStart}`),
+      `${padLabel('@引用命令桥')}: 已写入 (2.1.241+ 投递函数桥)`,
+    ];
+  }
+  if (hasDeliveryInsert && !hasVisible && matches.length === 0) {
+    // Already carrying the delivery bridge; the hasVisibleWebview command has
+    // no anchor on this host family, so there is nothing further to add.
+    return [content, `${padLabel('@引用命令桥')}: 已存在 (2.1.241+ 投递函数桥)`];
+  }
+
+  return [content, `${padLabel('@引用命令桥')}: 降级 (未找到命令 setup 锚点; companion 引用不可用)`];
 }
 
 function patchDisableImplicitSelectionSend(content) {
@@ -3471,6 +3522,7 @@ module.exports = {
     patchExtensionHtmlHead,
     patchWebviewIndex,
     patchMathHookStaticImport,
+    patchAtMentionCommand,
     buildWebviewConfigPreamble,
     normalizedPalette,
     MONACO_DIFF_THEMES,

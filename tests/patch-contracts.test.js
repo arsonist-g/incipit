@@ -1341,9 +1341,15 @@ function testFixture(root) {
     `${root}: patched extension.js has invalid JavaScript syntax`,
   );
   assertNoGracefulDegradation(`${root} extension.js`, extensionLines);
+  // On the 2.1.241+ command-setup family there is no `webviews` registry in
+  // scope, so the delivery bridge registers insertAtMention only and
+  // hasVisibleWebview is intentionally absent (the editor overlay degrades
+  // on its own).
+  const mentionLine = extensionLines.find(line => String(line || '').includes('@引用命令桥')) || '';
   assert(
     extensionPatched.includes('commands.registerCommand("incipit.claudeCode.insertAtMention"') &&
-      extensionPatched.includes('commands.registerCommand("incipit.claudeCode.hasVisibleWebview"'),
+      (extensionPatched.includes('commands.registerCommand("incipit.claudeCode.hasVisibleWebview"') ||
+        mentionLine.includes('投递函数桥')),
     `${root}: extension must expose incipit private @ mention command bridge on known official hosts`,
   );
   extensionContracts.unshift(__test.buildHostRouteContract(
@@ -1554,9 +1560,57 @@ function assertAtMentionBridgePatchDegrades(root) {
   );
 }
 
+function assertAtMentionDeliveryBridgeVariants() {
+  // 2.1.241 command-setup shape: a two-arg function whose local delivery
+  // helper routes deliver/reveal/stash/openLast, followed by the host's own
+  // insertAtMention registration.
+  const deliveryFixture = (execApi, regApi) =>
+    `function USr(e,t){async function r(n){if(t.deliverAtMention(n))return;` +
+    `if(t.revealAndDeliverAtMention(n))return;` +
+    `t.stashAtMentionForNextChatSurface(n),await ${execApi}.commands.executeCommand("claude-vscode.editor.openLast")}` +
+    `e.push(${regApi}.commands.registerCommand("claude-vscode.insertAtMention",async()=>{await r("@x")})),` +
+    `e.push(${regApi}.commands.registerCommand("claude-vscode.blur",async()=>{}))}`;
+
+  const stock = deliveryFixture('Fe', 'Fe');
+  const [patched, line] = __test.patchAtMentionCommand(stock);
+  assert(line.includes('已写入'), 'delivery anchor should patch cleanly');
+  assert(
+    patched.includes('commands.registerCommand("incipit.claudeCode.insertAtMention",async(__incipitMention)=>{if(typeof __incipitMention==="string"){await r(__incipitMention);return!0}return!1})'),
+    'delivery bridge must reuse the local delivery helper for string mentions',
+  );
+  assert(
+    patched.includes('e.push(Fe.commands.registerCommand("claude-vscode.insertAtMention"'),
+    'host insertAtMention registration must stay intact',
+  );
+  assert.doesNotThrow(
+    () => new vm.Script(patched, { filename: 'at-mention-delivery.js' }),
+    'patched delivery fixture must remain valid JavaScript',
+  );
+
+  const [repatched, repatchLine] = __test.patchAtMentionCommand(patched);
+  assert.strictEqual(repatched, patched, 'delivery bridge second apply must be idempotent');
+  assert(repatchLine.includes('已存在'), 'delivery bridge second apply should report pre-existing');
+
+  // Mismatched API identifiers (executeCommand vs registerCommand vars) must
+  // be treated as an anchor miss, not spliced with the wrong variable.
+  const mismatched = deliveryFixture('Ge', 'Fe');
+  const [unchanged, mismatchLine] = __test.patchAtMentionCommand(mismatched);
+  assert.strictEqual(unchanged, mismatched, 'mismatched delivery fixture must not be mutated');
+  assert(mismatchLine.includes('降级'), 'mismatched delivery fixture should degrade');
+
+  // No anchor at all: degrade without mutating.
+  const bare = 'function setup(e,t){e.push(t.commands.registerCommand("claude-vscode.insertAtMention",async()=>{}))}';
+  const [bareOut, bareLine] = __test.patchAtMentionCommand(bare);
+  assert.strictEqual(bareOut, bare, 'anchor miss must not mutate the bundle');
+  assert(bareLine.includes('降级'), 'anchor miss should degrade');
+
+  console.log('patch-contracts: ok at-mention delivery bridge variants');
+}
+
 assertRuntimeSourceContracts();
 assertHostStateBridgePatchVariants();
 assertMonacoDiffSpanPatchVariants();
+assertAtMentionDeliveryBridgeVariants();
 
 const fixtures = collectFixtureRoots();
 if (!fixtures.length) {
