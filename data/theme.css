@@ -649,6 +649,34 @@
   --incipit-conversation-column-width: 570px;
 }
 
+/*
+  Wide-placement adaptation.
+
+  570px reads as a book measure in the narrow sidebar the panel was designed
+  for, but the panel can also be docked into the secondary sidebar or the
+  editor area, where a fixed 570px column strands most of the surface as
+  empty margins. Widen the column in steps keyed to the webview viewport: the
+  sidebar path is untouched (a viewport narrower than the first breakpoint
+  never matches), and each step only fires when the host surface itself is
+  wide enough to hold the wider column. 880px stays the ceiling — beyond
+  that, line length outgrows comfortable reading.
+*/
+@media (min-width: 720px) {
+  :root {
+    --incipit-conversation-column-width: 680px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --incipit-conversation-column-width: 780px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --incipit-conversation-column-width: 880px;
+  }
+}
+
 /* ============================================================
    Message container baseline.
 

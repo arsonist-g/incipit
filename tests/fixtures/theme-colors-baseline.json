@@ -2,7 +2,7 @@
   "version": 1,
   "generatedFrom": "2026-07-21 pre-tokenization worktree",
   "sources": {
-    "themeSha256": "083a25c1c3a88e87b6eeb48da416c93580168ddd4376a36266b2e7c31de58c3a",
+    "themeSha256": "0695ac31861f01896613a301fb7c3f35ba72e70804cc4f4309f50ca0bdcd8691",
     "warmWhiteSha256": "804abae57073ab5f471a108a7b88566fad3c10f8c0e7b805102cd6fce8d6d516"
   },
   "themeSequence": [
@@ -100,6 +100,9 @@
     "\u0001:root\u0001--incipit-emphasis-font\u0001",
     "\u0001:root\u0001--incipit-code-font\u0001",
     "\u0001:root\u0001--incipit-conversation-column-width\u0001",
+    "@media (min-width: 720px)\u0001:root\u0001--incipit-conversation-column-width\u0001",
+    "@media (min-width: 1024px)\u0001:root\u0001--incipit-conversation-column-width\u0001",
+    "@media (min-width: 1440px)\u0001:root\u0001--incipit-conversation-column-width\u0001",
     "\u0001[data-incipit-messages-container]\u0001position\u0001!",
     "\u0001[data-incipit-messages-container]\u0001background\u0001!",
     "\u0001[data-incipit-messages-container]\u0001background-color\u0001!",
@@ -27055,6 +27058,21 @@
       "resolved": "1"
     },
     {
+      "key": "@media (min-width: 1024px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "780px"
+    },
+    {
+      "key": "@media (min-width: 1440px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "880px"
+    },
+    {
+      "key": "@media (min-width: 720px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "680px"
+    },
+    {
       "key": "\u0001*:not([class*=\"inputContainer_\"]):not([class*=\"inputContainer_\"] *):not([contenteditable]):not([contenteditable] *)\u0001scrollbar-color",
       "important": true,
       "resolved": "#3c3c3c transparent"
@@ -49645,6 +49663,21 @@
       "key": "@keyframes incipit-inline-edit-fade-in\u0001to\u0001opacity",
       "important": false,
       "resolved": "1"
+    },
+    {
+      "key": "@media (min-width: 1024px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "780px"
+    },
+    {
+      "key": "@media (min-width: 1440px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "880px"
+    },
+    {
+      "key": "@media (min-width: 720px)\u0001:root\u0001--incipit-conversation-column-width",
+      "important": false,
+      "resolved": "680px"
     },
     {
       "key": "\u0001*:not([class*=\"inputContainer_\"]):not([class*=\"inputContainer_\"] *):not([contenteditable]):not([contenteditable] *)\u0001scrollbar-color",
