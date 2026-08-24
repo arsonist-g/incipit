@@ -6,6 +6,11 @@
 
 ---
 
+> [!NOTE]
+> This repository is a secondary-development fork of [yc-duan/incipit](https://github.com/yc-duan/incipit) (AGPL-3.0). The upstream project is minimally maintained, so fixes and new features land here first. Changes specific to this fork are listed in [Fork changes](#fork-changes).
+
+---
+
 incipit redesigns Claude Code's entire VS Code frontend — body typography, math rendering, tool-call folding, diff, local history editing, context, and project activity views — in a literary style, with engineering surfaces folded into the same visual language. It does not touch model requests, authentication, tool schema, or the CLI spawn protocol; every byte sent to the server is identical before and after installation.
 
 Run it once and reload VS Code — no extra dependencies. Each time Claude Code updates and overwrites the frontend files, run it again. incipit keeps a lightweight official restore point per target/version, so you can return the patched extension to stock Claude Code at any time.
@@ -223,6 +228,15 @@ If Claude Code ever ships an official theming or style-injection API, this proje
 ## Acknowledgements
 
 Thanks to the [linuxdo](https://linux.do/) community for discussion, sharing, and feedback.
+
+---
+
+## Fork changes
+
+This fork ([arsonist-g/incipit](https://github.com/arsonist-g/incipit)) builds on [yc-duan/incipit](https://github.com/yc-duan/incipit). Fixes and features added on top of upstream `v0.1.20`:
+
+- Restore-vs-live math rendering race: the math preprocessing hook is now installed before the webview bundle runs, so formulas in conversations restored after a VS Code restart render like live ones (upstream issue [#12](https://github.com/yc-duan/incipit/issues/12)).
+- Wide-layout adaptation: the conversation column widens progressively when the panel is placed in a wide editor area instead of staying fixed at sidebar width (upstream issue [#13](https://github.com/yc-duan/incipit/issues/13)).
 
 ---
 

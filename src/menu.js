@@ -128,7 +128,7 @@ function loadPackageVersion() {
   catch (_) { return null; }
 }
 const PACKAGE_VERSION = loadPackageVersion();
-const CONNECT_URL = 'https://github.com/yc-duan/incipit';
+const CONNECT_URL = 'https://github.com/arsonist-g/incipit';
 
 const APPLY_TREE_NAME_WIDTH = 26;
 
