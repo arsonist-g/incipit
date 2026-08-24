@@ -10,6 +10,7 @@ const CONFIG_SECTION = 'incipitClaudeReference';
 const COMMAND_REFERENCE_SELECTION = 'incipitClaudeReference.referenceSelection';
 const COMMAND_REFERENCE_ACTIVE_SELECTION = 'incipitClaudeReference.referenceActiveSelection';
 const COMMAND_REFERENCE_ACTIVE_FILE = 'incipitClaudeReference.referenceActiveFile';
+const COMMAND_ADD_EXPLORER_ITEM = 'incipitClaudeReference.addExplorerItemToClaude';
 const CLAUDE_EXTENSION_ID = 'anthropic.claude-code';
 const CLAUDE_INSERT_COMMAND = 'incipit.claudeCode.insertAtMention';
 const OVERLAY_SENTINEL_ROOT = path.join(os.homedir(), '.incipit', 'editor-selection-overlay-v1');
@@ -90,6 +91,9 @@ function activate(context) {
     }),
     vscode.commands.registerCommand(COMMAND_REFERENCE_ACTIVE_FILE, async () => {
       await referenceActiveEditor({ wholeFile: true });
+    }),
+    vscode.commands.registerCommand(COMMAND_ADD_EXPLORER_ITEM, async (uriOrUris) => {
+      await referenceExplorerItems(uriOrUris);
     }),
     vscode.window.onDidChangeTextEditorSelection(scheduleRefresh),
     vscode.window.onDidChangeActiveTextEditor(scheduleRefresh),
@@ -220,6 +224,26 @@ async function referenceActiveEditor(options = {}) {
   }
   const mention = buildMention(editor.document.uri, selection);
   await referenceMention({ mention });
+}
+
+// Explorer context menu: insert one " @<absolute path>" run per selected file
+// or folder. The composer side appends the trailing space, so each click lands
+// as a space-delimited @ reference at the current cursor position — no
+// mention-picker round trip. Multi-select arrives as an array of Uris.
+async function referenceExplorerItems(uriOrUris) {
+  const uris = Array.isArray(uriOrUris) ? uriOrUris : [uriOrUris];
+  const mentions = [];
+  for (const uri of uris) {
+    if (!uri || uri.scheme !== 'file') continue;
+    const absolute = String(uri.fsPath || '').replace(/\\/g, '/');
+    if (!absolute) continue;
+    mentions.push(` @${absolute}`);
+  }
+  if (!mentions.length) {
+    vscode.window.showWarningMessage('No file-system item was available for the Claude Code reference.');
+    return;
+  }
+  await referenceMention({ mention: mentions.join('') });
 }
 
 function readOverlaySentinel() {

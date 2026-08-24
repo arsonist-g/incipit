@@ -4,6 +4,8 @@ Tiny VS Code companion extension proof for Claude Code.
 
 When the active editor has a non-empty selection, it normally shows two clickable CodeLens actions above the selection's first line: `◆ Selection` and `▣ File`. Clicking either action opens Claude Code if needed and inserts a visible official `@file#x-y` or `@file` reference in the composer.
 
+Right-clicking a file or folder in the Explorer shows **Incipit: Add to Claude Code Session Request**. Clicking it inserts ` @<absolute path>` (with surrounding spaces) at the current cursor position in the composer — one insert per click, multi-select inserts all selected paths in one space-delimited run. This avoids the `@`-picker search round trip entirely: what you see in the Explorer is what gets referenced.
+
 If incipit's experimental Workbench editor overlay is enabled in the CLI config, this extension hides CodeLens entirely. The overlay must then apply successfully and call `incipitClaudeReference.referenceActiveSelection` or `incipitClaudeReference.referenceActiveFile` directly; incipit no longer masks an overlay failure with a CodeLens fallback.
 
 ## Local Test

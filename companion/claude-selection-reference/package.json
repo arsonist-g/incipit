@@ -15,7 +15,8 @@
     "onStartupFinished",
     "onCommand:incipitClaudeReference.referenceSelection",
     "onCommand:incipitClaudeReference.referenceActiveSelection",
-    "onCommand:incipitClaudeReference.referenceActiveFile"
+    "onCommand:incipitClaudeReference.referenceActiveFile",
+    "onCommand:incipitClaudeReference.addExplorerItemToClaude"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -34,8 +35,21 @@
         "command": "incipitClaudeReference.referenceActiveFile",
         "title": "Incipit: Reference Active File in Claude Code",
         "icon": "$(file-code)"
+      },
+      {
+        "command": "incipitClaudeReference.addExplorerItemToClaude",
+        "title": "Incipit: Add to Claude Code Session Request",
+        "icon": "$(mention)"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "incipitClaudeReference.addExplorerItemToClaude",
+          "group": "9_incipit"
+        }
+      ]
+    },
     "configuration": {
       "title": "Incipit Claude Selection Reference",
       "properties": {
