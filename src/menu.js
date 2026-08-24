@@ -135,6 +135,7 @@ const APPLY_TREE_NAME_WIDTH = 26;
 const WEBVIEW_FILE_DESC_KEYS = Object.freeze({
   'enhance.js':              'apply.report.desc.enhance_js',
   'enhance_shared.js':       'apply.report.desc.enhance_shared_js',
+  'markdown_hook_boot.js':   'apply.report.desc.markdown_hook_boot_js',
   'runtime_kernel.js':       'apply.report.desc.runtime_kernel_js',
   'enhance_footer_badge.js': 'apply.report.desc.enhance_footer_badge_js',
   'enhance_thinking.js':     'apply.report.desc.enhance_thinking_js',

@@ -1,4 +1,4 @@
-import { preprocessMarkdown } from './markdown_preprocess.js';
+import { installMarkdownPreprocessHook } from './markdown_hook_boot.js';
 import { startHostProbe } from './host_probe.js';
 import {
   CFG,
@@ -23,16 +23,16 @@ import {
  * incipit webview bootstrap.
  *
  * Keep this file small and first-paint focused. Heavy behavior now loads from
- * separate modules after the critical attrs/styles are in place. The
- * synchronous markdown math hook stays here: the host react-markdown patch
- * cannot await a lazy import.
+ * separate modules after the critical attrs/styles are in place. The markdown
+ * math hook itself is installed by `markdown_hook_boot.js`, which the patched
+ * bundle imports statically so restored-history renders cannot beat it; the
+ * call below is an idempotent backstop for hosts where that import is absent.
  */
 
 (() => {
   'use strict';
 
-  window.__CLAUDE_ENHANCE_PREPROCESS_MARKDOWN__ =
-    raw => preprocessMarkdown(raw, { math: CFG.math });
+  installMarkdownPreprocessHook();
   reportHealth('markdown.preprocess', 'ok', {
     links: 'enabled',
     math: CFG.math ? 'enabled' : 'disabled',

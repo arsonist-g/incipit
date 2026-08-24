@@ -77,6 +77,15 @@ function assertNoGracefulDegradation(label, lines) {
   assert.deepStrictEqual(degraded, [], `${label} degraded:\n${degraded.join('\n')}`);
 }
 
+// The real webview bundle loads as `type="module"`, but vm.Script parses in
+// Script goal where a static import declaration is a SyntaxError. Strip the
+// injected import marker for the syntax check; its presence and count are
+// asserted separately in assertWebviewSemanticShape.
+const WEBVIEW_MATH_HOOK_IMPORT_MARKER = 'import"./markdown_hook_boot.js";';
+function webviewSyntaxCheckSource(patched) {
+  return patched.split(`${WEBVIEW_MATH_HOOK_IMPORT_MARKER}\n`).join('');
+}
+
 function assertWebviewSemanticShape(root, patched, statusLines) {
   assert(
     statusLines.some(line => /流式代码高亮/.test(line) && /ok/.test(line)),
@@ -89,6 +98,15 @@ function assertWebviewSemanticShape(root, patched, statusLines) {
   assert(
     patched.includes('.indexOf("\\n")!==-1') && patched.includes('className:"hljs"'),
     `${root}: no-language fenced code render path missing`,
+  );
+  assert(
+    statusLines.some(line => /math 钩子静态导入/.test(line) && /(已写入|已替换旧版)/.test(line)),
+    `${root}: math hook static import contract did not report applied`,
+  );
+  assert.strictEqual(
+    patched.split('import"./markdown_hook_boot.js";').length - 1,
+    1,
+    `${root}: math hook static import marker must appear exactly once`,
   );
   assert(
     statusLines.some(line => /宿主语义桥/.test(line) && /ok/.test(line)),
@@ -242,6 +260,7 @@ function assertBodyObserverPolicy(sources) {
 function assertRuntimeSourceContracts() {
   const hostProbe = fs.readFileSync(path.join(__dirname, '..', 'data', 'host_probe.js'), 'utf8');
   const bootstrap = fs.readFileSync(path.join(__dirname, '..', 'data', 'claude_code_enhance.js'), 'utf8');
+  const hookBoot = fs.readFileSync(path.join(__dirname, '..', 'data', 'markdown_hook_boot.js'), 'utf8');
   const markdownPreprocess = fs.readFileSync(path.join(__dirname, '..', 'data', 'markdown_preprocess.js'), 'utf8');
   const shared = fs.readFileSync(path.join(__dirname, '..', 'data', 'enhance_shared.js'), 'utf8');
   const legacy = fs.readFileSync(path.join(__dirname, '..', 'data', 'enhance_legacy.js'), 'utf8');
@@ -384,9 +403,13 @@ function assertRuntimeSourceContracts() {
   );
   assert(
     install.includes("[path.join('data', 'markdown_preprocess.js'),") &&
-      bootstrap.includes("import { preprocessMarkdown } from './markdown_preprocess.js'") &&
-      bootstrap.includes('raw => preprocessMarkdown(raw, { math: CFG.math })') &&
+      install.includes("[path.join('data', 'markdown_hook_boot.js'),") &&
+      bootstrap.includes("import { installMarkdownPreprocessHook } from './markdown_hook_boot.js'") &&
+      bootstrap.includes('installMarkdownPreprocessHook();') &&
       bootstrap.includes("links: 'enabled'") &&
+      hookBoot.includes("import { preprocessMarkdown } from './markdown_preprocess.js'") &&
+      hookBoot.includes('installMarkdownPreprocessHook();') &&
+      hookBoot.includes('globalThis.__CLAUDE_ENHANCE_PREPROCESS_MARKDOWN__') &&
       markdownPreprocess.includes('export function preprocessMarkdownBareUrls') &&
       markdownPreprocess.includes('PREPROCESS_CACHE_MAX_ENTRIES') &&
       markdownPreprocess.includes('PREPROCESS_CACHE_MAX_CHARS') &&
@@ -1349,7 +1372,7 @@ function testFixture(root) {
     extensionContracts,
   );
   assert.doesNotThrow(
-    () => new vm.Script(webviewPatched, { filename: `${root}/webview/index.js` }),
+    () => new vm.Script(webviewSyntaxCheckSource(webviewPatched), { filename: `${root}/webview/index.js` }),
     `${root}: patched webview/index.js has invalid JavaScript syntax`,
   );
   assertNoGracefulDegradation(`${root} webview/index.js`, webviewLines);
@@ -1364,7 +1387,7 @@ function testFixture(root) {
     extensionContracts,
   );
   assert.doesNotThrow(
-    () => new vm.Script(webviewPatchedAgain, { filename: `${root}/webview/index.js second pass` }),
+    () => new vm.Script(webviewSyntaxCheckSource(webviewPatchedAgain), { filename: `${root}/webview/index.js second pass` }),
     `${root}: patched webview/index.js second pass has invalid JavaScript syntax`,
   );
   assert.strictEqual(webviewPatchedAgain, webviewPatched, `${root}: webview patch is not idempotent`);
