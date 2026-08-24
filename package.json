@@ -70,12 +70,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yc-duan/incipit.git"
+    "url": "git+https://github.com/arsonist-g/incipit.git"
   },
   "bugs": {
-    "url": "https://github.com/yc-duan/incipit/issues"
+    "url": "https://github.com/arsonist-g/incipit/issues"
   },
-  "homepage": "https://github.com/yc-duan/incipit#readme",
+  "homepage": "https://github.com/arsonist-g/incipit#readme",
   "author": "",
   "license": "AGPL-3.0-or-later"
 }

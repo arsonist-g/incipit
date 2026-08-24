@@ -4,6 +4,11 @@
 
 ---
 
+> [!NOTE]
+> 本仓库是 [yc-duan/incipit](https://github.com/yc-duan/incipit)（AGPL-3.0）的二次开发仓库。上游已较少维护，修复与新功能会先落在本仓库。本仓库相对上游的改动见[二开改动](#二开改动)。
+
+---
+
 incipit 把 Claude Code 在 VS Code 里的整套前端——正文排版、数学渲染、tool call 折叠、diff、本地历史的编辑、上下文与项目活动视图——按文学风格重新设计，工程信息也归并到统一的视觉语言。没有更改，侵入任何模型请求、鉴权、tool schema、CLI spawn 协议；装它前后，服务端那一侧看到的字节完全相同。
 
 跑一次，重载 VS Code 即可，不需要额外依赖。每次 Claude Code 升级覆盖前端文件后，重跑一次。incipit 会按目标/版本保留一个轻量官方恢复点，随时可以把已打补丁的扩展恢复回官方 Claude Code。
@@ -221,6 +226,15 @@ VS Code 的扩展之间有严格的沙箱隔离，一个插件没有办法向另
 ## 致谢
 
 感谢 [linuxdo](https://linux.do/) 社区的交流、分享与反馈。
+
+---
+
+## 二开改动
+
+本仓库（[arsonist-g/incipit](https://github.com/arsonist-g/incipit)）基于 [yc-duan/incipit](https://github.com/yc-duan/incipit) 二次开发。在上游 `v0.1.20` 之上新增的修复与功能：
+
+- 重启后历史公式不渲染的竞态修复：数学预处理钩子改为在 webview bundle 运行前安装，VS Code 重启后恢复的往期对话中公式与实时消息渲染一致（上游 issue [#12](https://github.com/yc-duan/incipit/issues/12)）。
+- 宽面板布局适配：对话列宽度随面板宽度渐进放宽，放到宽编辑器区域不再固定为边栏宽度（上游 issue [#13](https://github.com/yc-duan/incipit/issues/13)）。
 
 ---
 
