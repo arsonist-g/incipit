@@ -47,6 +47,7 @@ const THEME_TARGET_NAME = 'theme.css';
 const ROOT_WEBVIEW_FILES = [
   [path.join('data', 'claude_code_enhance.js'), ENHANCE_TARGET_NAME],
   [path.join('data', 'enhance_shared.js'),      'enhance_shared.js'],
+  [path.join('data', 'markdown_hook_boot.js'),  'markdown_hook_boot.js'],
   [path.join('data', 'runtime_kernel.js'),      'runtime_kernel.js'],
   [path.join('data', 'capability.js'),          'capability.js'],
   [path.join('data', 'enhance_footer_badge.js'), 'enhance_footer_badge.js'],
@@ -236,6 +237,15 @@ const VERSION_RE = /anthropic\.claude-code-(\d+(?:\.\d+)+)/;
 const STATIC_IMPORT_RE = /(?:\r?\n)?import\s+['"]\.\/enhance\.js['"];?(?:\r?\n)?/;
 const DYNAMIC_IMPORT_RE =
   /(?:\r?\n)?import\(\s*['"]\.\/enhance\.js['"]\s*\)(?:\.catch\([^)]*\))?;?(?:\r?\n)?/;
+// The math preprocess hook must exist before the bundle body runs, or
+// restored-history renders can reach the react-markdown handoff first and
+// show raw `$...$` (upstream issue #12). A static import is hoisted ahead of
+// the importer's body, so `markdown_hook_boot.js` evaluates before any host
+// code. Strip-and-reinject keeps re-applies idempotent wherever the previous
+// apply left the statement.
+const MATH_HOOK_STATIC_IMPORT_MARKER = 'import"./markdown_hook_boot.js";';
+const MATH_HOOK_STATIC_IMPORT_RE =
+  /(?:\r?\n)?import\s*\(?\s*['"]\.\/markdown_hook_boot\.js['"]\s*\)?;?(?:\r?\n)?/g;
 
 // Patch the final "markdown string -> file.value" handoff in the bundled
 // `react-markdown` wrapper instead of relying on the exact compiled children
@@ -2435,6 +2445,20 @@ function patchMarkdownChildren(content) {
   ];
 }
 
+// Prepend the static import that guarantees the math preprocess hook exists
+// before the bundle body runs. Unconditional by design: a missing hook turns
+// every restored conversation into raw `$...$`, and unlike a dynamic import a
+// failed static import would kill the bundle, so `markdown_hook_boot.js` is
+// always copied as a root webview file before this patch can land.
+function patchMathHookStaticImport(content) {
+  const stripped = content.replace(MATH_HOOK_STATIC_IMPORT_RE, '');
+  const updated = MATH_HOOK_STATIC_IMPORT_MARKER + '\n' + stripped;
+  return [
+    updated,
+    `${padLabel('math 钩子静态导入')}: ${stripped === content ? '已写入' : '已替换旧版'}`,
+  ];
+}
+
 // The host has shipped this semantic component through two compiler families:
 // React.createElement through 2.1.185 and the automatic JSX runtime from
 // 2.1.195. Locate the component by its public prop contract, then keep every
@@ -3063,6 +3087,10 @@ function patchWebviewIndex(content, features, theme, language, installContracts 
   [updated, markdownStatus] = patchMarkdownChildren(updated);
   statusLines.push(record('install.markdownPreprocess', markdownStatus));
 
+  let mathHookImportStatus;
+  [updated, mathHookImportStatus] = patchMathHookStaticImport(updated);
+  statusLines.push(record('install.mathHookStaticImport', mathHookImportStatus));
+
   let markdownCodeStatus;
   [updated, markdownCodeStatus] = patchMarkdownCodeComponent(updated);
   statusLines.push(record('install.markdownCodeComponent', markdownCodeStatus));
@@ -3442,6 +3470,7 @@ module.exports = {
     patchExtensionJs,
     patchExtensionHtmlHead,
     patchWebviewIndex,
+    patchMathHookStaticImport,
     buildWebviewConfigPreamble,
     normalizedPalette,
     MONACO_DIFF_THEMES,
