@@ -189,28 +189,18 @@
 /*
   Wide-placement adaptation.
 
-  570px reads as a book measure in the narrow sidebar the panel was designed
-  for, but the panel can also be docked into the secondary sidebar or the
-  editor area, where a fixed 570px column strands most of the surface as
-  empty margins. Widen the column in steps keyed to the webview viewport: the
-  sidebar path is untouched (a viewport narrower than the first breakpoint
-  never matches), and each step only fires when the host surface itself is
-  wide enough to hold the wider column. 880px stays the ceiling — beyond
-  that, line length outgrows comfortable reading.
+  The 570px cap is a book measure for the narrow sidebar. Below the
+  breakpoint it is effectively inert — a sidebar narrower than the cap shows
+  the same full-width rows as before. Any wider dock (secondary sidebar,
+  editor area) only ever experiences the cap as blank margins flanking a
+  centered column. Past the breakpoint, drop the cap entirely so the
+  conversation fills the panel; the host's own 20px container padding keeps
+  text off the edges. Users who stretch the panel wide do it because they
+  want the width — wide code blocks, diffs, and tables benefit first.
 */
-@media (min-width: 720px) {
+@media (min-width: 640px) {
   :root {
-    --incipit-conversation-column-width: 680px;
-  }
-}
-@media (min-width: 1024px) {
-  :root {
-    --incipit-conversation-column-width: 780px;
-  }
-}
-@media (min-width: 1440px) {
-  :root {
-    --incipit-conversation-column-width: 880px;
+    --incipit-conversation-column-width: none;
   }
 }
 
