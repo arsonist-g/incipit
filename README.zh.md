@@ -28,10 +28,12 @@ incipit 修改的是 Claude Code 官方扩展在你磁盘上的文件，本身�
 需要 Node.js 16 或更新版本。
 
 ```bash
-npm install -g incipit@latest
+npm install -g @arsonist-g/incipit@latest
 ```
 
-`incipit` 是终端 CLI，必须全局安装。`npm install incipit`（不带 `-g`）是 npm 装本地依赖的写法，会把包丢进当前目录的 `node_modules/`，既不会注册到系统 PATH，也跑不到正确版本。
+本仓库以 scope 包 `@arsonist-g/incipit` 发布到 npm；npm 上不带 scope 的 `incipit` 包属于上游项目。安装后的 CLI 命令仍然是 `incipit`。
+
+`@arsonist-g/incipit` 是终端 CLI，必须全局安装。`npm install @arsonist-g/incipit`（不带 `-g`）是 npm 装本地依赖的写法，会把包丢进当前目录的 `node_modules/`，既不会注册到系统 PATH，也跑不到正确版本。
 
 装好后直接运行：
 
@@ -65,7 +67,7 @@ Claude Code 扩展每次更新后，本地补丁会被官方文件覆盖，重�
 卸载 incipit CLI：
 
 ```bash
-npm uninstall -g incipit
+npm uninstall -g @arsonist-g/incipit
 ```
 
 仅移除 `incipit` cli 本身，不会自动还原已应用到 Claude Code 扩展里的补丁，也不会删除 `~/.incipit/`。如果要回滚补丁，请先运行 `incipit restore`。

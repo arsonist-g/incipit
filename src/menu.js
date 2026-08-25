@@ -123,11 +123,14 @@ async function runScreenTransition(work) {
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 
-function loadPackageVersion() {
-  try { return require(path.join(PACKAGE_ROOT, 'package.json')).version || null; }
+function loadPackageField(field) {
+  try { return require(path.join(PACKAGE_ROOT, 'package.json'))[field] || null; }
   catch (_) { return null; }
 }
-const PACKAGE_VERSION = loadPackageVersion();
+const PACKAGE_VERSION = loadPackageField('version');
+// The published npm name (@scope/name) differs from the CLI command name —
+// the upgrade command must install the package, not the binary name.
+const PACKAGE_NPM_NAME = loadPackageField('name') || 'incipit';
 const CONNECT_URL = 'https://github.com/arsonist-g/incipit';
 
 const APPLY_TREE_NAME_WIDTH = 26;
@@ -2967,8 +2970,8 @@ async function finishWithUpdateNotice(code, updatePromise) {
 // system shell without platform-specific forks.
 //
 // Pin to the EXACT version the update check discovered, not `@latest`.
-// `checkForUpdate()` reads `https://registry.npmjs.org/incipit/latest`
-// over HTTP (always fresh), but `npm install -g incipit@latest` resolves
+// `checkForUpdate()` reads `https://registry.npmjs.org/<package-name>/latest`
+// over HTTP (always fresh), but `npm install -g <package>@latest` resolves
 // the `latest` dist-tag through npm's local metadata cache, which lags
 // right after a publish. The two disagreeing produced an infinite
 // "upgrade available → upgrade installs the old version → still
@@ -2980,7 +2983,7 @@ async function finishWithUpdateNotice(code, updatePromise) {
 function runNpmUpdate(targetVersion) {
   const safe = typeof targetVersion === 'string' &&
     /^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/.test(targetVersion);
-  const spec = safe ? `incipit@${targetVersion}` : 'incipit@latest';
+  const spec = safe ? `${PACKAGE_NPM_NAME}@${targetVersion}` : `${PACKAGE_NPM_NAME}@latest`;
   return new Promise(resolve => {
     try {
       const child = spawn(`npm install -g ${spec} --prefer-online`, {
