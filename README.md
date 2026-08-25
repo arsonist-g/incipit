@@ -236,7 +236,7 @@ Thanks to the [linuxdo](https://linux.do/) community for discussion, sharing, an
 This fork ([arsonist-g/incipit](https://github.com/arsonist-g/incipit)) builds on [yc-duan/incipit](https://github.com/yc-duan/incipit). Fixes and features added on top of upstream `v0.1.20`:
 
 - Restore-vs-live math rendering race: the math preprocessing hook is now installed before the webview bundle runs, so formulas in conversations restored after a VS Code restart render like live ones (upstream issue [#12](https://github.com/yc-duan/incipit/issues/12)).
-- Wide-layout adaptation: the conversation column widens progressively when the panel is placed in a wide editor area instead of staying fixed at sidebar width (upstream issue [#13](https://github.com/yc-duan/incipit/issues/13)).
+- Wide-layout adaptation: the conversation column fills the panel width when docked into a wide editor area instead of staying a fixed-width centered column (upstream issue [#13](https://github.com/yc-duan/incipit/issues/13)).
 
 ---
 

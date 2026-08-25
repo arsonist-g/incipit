@@ -234,7 +234,7 @@ VS Code 的扩展之间有严格的沙箱隔离，一个插件没有办法向另
 本仓库（[arsonist-g/incipit](https://github.com/arsonist-g/incipit)）基于 [yc-duan/incipit](https://github.com/yc-duan/incipit) 二次开发。在上游 `v0.1.20` 之上新增的修复与功能：
 
 - 重启后历史公式不渲染的竞态修复：数学预处理钩子改为在 webview bundle 运行前安装，VS Code 重启后恢复的往期对话中公式与实时消息渲染一致（上游 issue [#12](https://github.com/yc-duan/incipit/issues/12)）。
-- 宽面板布局适配：对话列宽度随面板宽度渐进放宽，放到宽编辑器区域不再固定为边栏宽度（上游 issue [#13](https://github.com/yc-duan/incipit/issues/13)）。
+- 宽面板布局适配：面板拉宽后对话内容直接填满面板宽度，不再是以固定宽度居中、两侧留白（上游 issue [#13](https://github.com/yc-duan/incipit/issues/13)）。
 
 ---
 
