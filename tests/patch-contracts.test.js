@@ -273,6 +273,7 @@ function assertRuntimeSourceContracts() {
   const capability = fs.readFileSync(path.join(__dirname, '..', 'data', 'capability.js'), 'utf8');
   const fiberFingerprint = fs.readFileSync(path.join(__dirname, '..', 'data', 'capability', 'fingerprints', 'fiber.js'), 'utf8');
   const companionSelectionReference = fs.readFileSync(path.join(__dirname, '..', 'companion', 'claude-selection-reference', 'extension.js'), 'utf8');
+  const companionPackageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'companion', 'claude-selection-reference', 'package.json'), 'utf8'));
   const install = fs.readFileSync(path.join(__dirname, '..', 'src', 'install.js'), 'utf8');
   const patchContractSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'patch-contract.js'), 'utf8');
   const cssWithoutComments = theme.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -311,6 +312,18 @@ function assertRuntimeSourceContracts() {
         install.includes('incipit.claudeCode.insertAtMention') &&
         install.includes('incipit.claudeCode.hasVisibleWebview'),
     ],
+    [
+      'companion explorer context reference',
+      companionPackageJson.contributes &&
+        Array.isArray(companionPackageJson.contributes.commands) &&
+        companionPackageJson.contributes.menus &&
+        Array.isArray(companionPackageJson.contributes.menus['explorer/context']) &&
+        companionPackageJson.contributes.menus['explorer/context'].some(entry =>
+          entry.command === 'incipitClaudeReference.addExplorerItemToClaude') &&
+        companionSelectionReference.includes("const COMMAND_ADD_EXPLORER_ITEM = 'incipitClaudeReference.addExplorerItemToClaude';") &&
+        companionSelectionReference.includes('await referenceExplorerItems(uriOrUris);') &&
+        companionSelectionReference.includes('mentions.push(` @${absolute}`);'),
+    ],
   ];
 
   assert(
@@ -326,8 +339,9 @@ function assertRuntimeSourceContracts() {
       'VS Code Workbench overlay patch',
       'webview runtime DOM/state bridge',
       'companion command bridge',
+      'companion explorer context reference',
     ],
-    'injection surface audit must enumerate the five planned entry classes',
+    'injection surface audit must enumerate the six planned entry classes',
   );
   for (const [name, ok] of injectionSurfaceAudit) {
     assert(ok, `injection surface audit missing coverage for ${name}`);

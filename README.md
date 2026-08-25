@@ -237,6 +237,8 @@ This fork ([arsonist-g/incipit](https://github.com/arsonist-g/incipit)) builds o
 
 - Restore-vs-live math rendering race: the math preprocessing hook is now installed before the webview bundle runs, so formulas in conversations restored after a VS Code restart render like live ones (upstream issue [#12](https://github.com/yc-duan/incipit/issues/12)).
 - Wide-layout adaptation: the conversation column fills the panel width when docked into a wide editor area instead of staying a fixed-width centered column (upstream issue [#13](https://github.com/yc-duan/incipit/issues/13)).
+- At-mention command bridge ported to the Claude Code 2.1.241 command setup, so references from the companion extension reach the composer on current hosts.
+- Explorer context menu: right-clicking a file or folder offers *Incipit: Add to Claude Code Session Request*, which inserts ` @<absolute path>` at the cursor in the composer (companion extension, multi-select supported).
 
 ---
 
